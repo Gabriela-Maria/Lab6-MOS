@@ -35,8 +35,8 @@ def create_maze(dim, seed=None):
         else:
             stack.pop()
 
-    maze[1, 0] = 0  # Entrada
-    maze[-2, -1] = 0  # Salida
+    maze[1, 0] = 0 
+    maze[-2, -1] = 0 
     return maze
 
 
@@ -92,12 +92,12 @@ def simulate_mealy(maze, individuo, start=(1, 0), start_dir=1, max_steps=300, sh
             steps += 1
 
             if (x, y) == (len(maze) - 2, len(maze[0]) - 1):
-                return (x, y), 0, steps  # llegó exitosamente
+                return (x, y), 0, steps  
         else:
             steps += 1  # cuenta intento fallido pero continúa
             continue
 
-    return (x, y), 1, steps  # no llegó a la meta
+    return (x, y), 1, steps  
 
 
 def fitness(indiv, mazes):
@@ -132,13 +132,12 @@ def generarGen():
     return random.choice(["S"] * 3 + ["L"] + ["R"])
 
 
-# en el anterior era cromosoma(longitudInicial):
 def generar_individuo_mealy():
     inputs = [
         "L_L_L", "P_L_L", "L_P_L", "L_L_P",
         "P_P_L", "P_L_P", "L_P_P", "P_P_P"
     ]
-    estados = ["A", "B", "C"]  # puedes ajustar según la complejidad deseada
+    estados = ["A", "B", "C"]  
     acciones = ["S", "L", "R"]
 
     individuo = {}
@@ -261,7 +260,7 @@ def isFitnessStagnant(fit):
 def genetico(mazes):
     start = time.time()
 
-    lenIndiv = CNG_LEN  # ya no se usa directamente pero puedes dejarlo para luego
+    lenIndiv = CNG_LEN  
     poblacion = [generar_individuo_mealy() for _ in range(N_POP)]
     poblacion.sort(key=lambda indiv: fitness(indiv, mazes), reverse=True)
     fit = {}
@@ -273,12 +272,8 @@ def genetico(mazes):
         elite = [poblacion[0], poblacion[1], poblacion[2]]
         nueva_gen = []
 
-        # Guarda élite tal cual para no destruir lo poco que aprendieron
         nueva_gen.extend(elite)
 
-
-
-        # Generar descendencia por selección + cruce + mutación (falta adaptar operadores)
         for _ in range(N_POP):
             p1 = select(poblacion, mazes)
             p2 = select(poblacion, mazes)
@@ -313,9 +308,12 @@ def genetico(mazes):
 
     imprimir_en_todos_los_mazes(mejor[1], mazes)
 
+    return fit, mejor[1]  # retorna también el mejor individuo
+
+
 def evaluar_en_todos_los_mazes(individuo, mazes):
     for i, maze in enumerate(mazes):
-        print(f"\n📍 Maze #{i+1}")
+        print(f"\n Maze #{i+1}")
         (x, y), penal, steps = simulate_mealy(maze, individuo, (1, 0), 1, show=False)
         print(f"Resultado final: ({x}, {y}), penalización: {penal}, pasos: {steps}")
         imprimir_mealy(individuo, maze)
@@ -335,6 +333,5 @@ def display_maze(maze):
 start = time.time()
 
 K = 10
-K_MAZES = [create_maze(7, seed=i) for i in range(K)]  # Semilla fija para reproducibilidad
+K_MAZES = [create_maze(7, seed=i) for i in range(K)] 
 
-genetico(K_MAZES)
