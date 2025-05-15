@@ -60,10 +60,10 @@ def percibir(maze, x, y, dir_idx):
     return "_".join(percepcion)
 
 # en el anterior era simulate(maze, commands, start=(1, 0), start_dir=0, show=False):
-def simulate_mealy(maze, individuo, start=(1, 0), start_dir=0, max_steps=300, show=False):
+def simulate_mealy(maze, individuo, start=(1, 0), start_dir=1, max_steps=300, show=False):
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]  # Up, Right, Down, Left
     x, y = start
-    dir_idx = start_dir
+    dir_idx = start_dir  # comienza mirando hacia la derecha
     steps = 0
     estado = "A"
 
@@ -83,7 +83,7 @@ def simulate_mealy(maze, individuo, start=(1, 0), start_dir=0, max_steps=300, sh
             dir_idx = (dir_idx - 1) % 4
         elif accion == "R":
             dir_idx = (dir_idx + 1) % 4
-        # "S" o avanzar
+        # "S" o avanzar recto
         dx, dy = directions[dir_idx]
         nx, ny = x + dx, y + dy
 
@@ -91,13 +91,13 @@ def simulate_mealy(maze, individuo, start=(1, 0), start_dir=0, max_steps=300, sh
             x, y = nx, ny
             steps += 1
 
-            # objetivo alcanzado
             if (x, y) == (len(maze) - 2, len(maze[0]) - 1):
-                return (x, y), 0, steps
+                return (x, y), 0, steps  # llegó exitosamente
         else:
-            return (x, y), 1, steps
+            steps += 1  # cuenta intento fallido pero continúa
+            continue
 
-    return (x, y), 1, steps  # se quedó sin pasos
+    return (x, y), 1, steps  # no llegó a la meta
 
 
 def fitness(indiv, mazes):
@@ -192,36 +192,42 @@ def select(population, mazes):
 def imprimir_mealy(indiv, maze):
     path_maze = maze.copy()
     x, y = 1, 0
-    dir_idx = 0
+    dir_idx = 1  # comienza mirando a la derecha
     estado = "A"
     directions = [(-1, 0), (0, 1), (1, 0), (0, -1)]
-    path_maze[x][y] = 2
+    path_maze[x][y] = 2  # marca el inicio
 
     for _ in range(300):
         percepcion = percibir(maze, x, y, dir_idx)
         if (estado, percepcion) not in indiv:
             break
+
         accion, estado = indiv[(estado, percepcion)]
 
         if accion == "L":
             dir_idx = (dir_idx - 1) % 4
         elif accion == "R":
             dir_idx = (dir_idx + 1) % 4
+        # si es "S", sigue recto
 
         dx, dy = directions[dir_idx]
         nx, ny = x + dx, y + dy
+
         if 0 <= nx < len(maze) and 0 <= ny < len(maze[0]) and maze[nx][ny] == 0:
             x, y = nx, ny
-            path_maze[x][y] = 2
+            path_maze[x][y] = 2  # marca el camino
+            if (x, y) == (len(maze) - 2, len(maze[0]) - 1):
+                break  # llegó a la salida
         else:
-            break
+            continue  # no se mueve pero sigue intentando
 
     display_maze(path_maze)
+
 
 def imprimir_en_todos_los_mazes(indiv, mazes):
     for i, maze in enumerate(mazes):
         print(f"\n🧭 Maze #{i + 1}")
-        (x, y), penal, steps = simulate_mealy(maze, indiv, (1, 0), 0, show=False)
+        (x, y), penal, steps = simulate_mealy(maze, indiv, (1, 0), 1, show=False)
         print(f"Resultado: posición final=({x}, {y}), penalización={penal}, pasos={steps}")
         imprimir_mealy(indiv, maze)
 
@@ -267,10 +273,9 @@ def genetico(mazes):
         elite = [poblacion[0], poblacion[1], poblacion[2]]
         nueva_gen = []
 
-        # Preservar elite con mutaciones suaves (puedes cambiar esto más adelante)
-        for _ in range(10):
-            for indiv in elite:
-                nueva_gen.append(mutate_mealy(indiv.copy(), mutation_rate=0.02))  # mutación leve
+        # Guarda élite tal cual para no destruir lo poco que aprendieron
+        nueva_gen.extend(elite)
+
 
 
         # Generar descendencia por selección + cruce + mutación (falta adaptar operadores)
@@ -292,7 +297,7 @@ def genetico(mazes):
             score = fitness_por_maze(poblacion[0], maze)
             print(f"  Maze #{i+1}: {score}")
 
-        (x, y), penalties, steps = simulate_mealy(mazes[0], poblacion[0], (1, 0), 0, False)
+        (x, y), penalties, steps = simulate_mealy(mazes[0], poblacion[0], (1, 0), 1, False)
         fit[gen] = fitnessGeneracion
 
         if fitnessGeneracion > mejor[0]:
@@ -311,7 +316,7 @@ def genetico(mazes):
 def evaluar_en_todos_los_mazes(individuo, mazes):
     for i, maze in enumerate(mazes):
         print(f"\n📍 Maze #{i+1}")
-        (x, y), penal, steps = simulate_mealy(maze, individuo, (1, 0), 0, show=False)
+        (x, y), penal, steps = simulate_mealy(maze, individuo, (1, 0), 1, show=False)
         print(f"Resultado final: ({x}, {y}), penalización: {penal}, pasos: {steps}")
         imprimir_mealy(individuo, maze)
 
